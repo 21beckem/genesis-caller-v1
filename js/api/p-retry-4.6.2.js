@@ -1,0 +1,8 @@
+/**
+ * Bundled by jsDelivr using Rollup v2.79.2 and Terser v5.39.0.
+ * Original file: /npm/p-retry@4.6.2/index.js
+ *
+ * Do NOT use SRI with dynamically generated files! More information: https://www.jsdelivr.com/using-sri-with-dynamic-files
+ */
+import r from"./retry-0.13.1.js";var t={exports:{}};const e=r,o=["Failed to fetch","NetworkError when attempting to fetch resource.","The Internet connection appears to be offline.","Network request failed"];class s extends Error{constructor(r){super(),r instanceof Error?(this.originalError=r,({message:r}=r)):(this.originalError=new Error(r),this.originalError.stack=this.stack),this.name="AbortError",this.message=r}}const n=(r,t)=>new Promise(((n,a)=>{t={onFailedAttempt:()=>{},retries:10,...t};const i=e.operation(t);i.attempt((async e=>{try{n(await r(e))}catch(r){if(!(r instanceof Error))return void a(new TypeError(`Non-error was thrown: "${r}". You should only throw errors.`));if(r instanceof s)i.stop(),a(r.originalError);else if(r instanceof TypeError&&(c=r.message,!o.includes(c)))i.stop(),a(r);else{((r,t,e)=>{const o=e.retries-(t-1);r.attemptNumber=t,r.retriesLeft=o})(r,e,t);try{await t.onFailedAttempt(r)}catch(r){return void a(r)}i.retry(r)||a(i.mainError())}}var c}))}));t.exports=n,t.exports.default=n;var a=t.exports.AbortError=s,i=t.exports;export{a as AbortError,i as default};
+//# sourceMappingURL=/sm/e2e4ee3faf1576d6b15c1afb34b353db59500d0847bd0e1a1ab7166c8d83ca56.map
