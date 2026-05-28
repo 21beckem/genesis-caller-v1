@@ -168,6 +168,7 @@ export class App {
     saveBtn.onclick = () => {
       const newConfig = {};
       fields.forEach(field => {
+        if (field.type === 'span') return;
         const input = fieldsContainer.querySelector(`input[data-field-name="${field.name}"]`);
         newConfig[field.name] = input.value;
       });
