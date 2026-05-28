@@ -17,6 +17,10 @@ export class BaseTool {
     return true;
   }
 
+  configUpdated(config) {
+    // Optional method for tools to react to config changes
+  }
+
   getToolDefinition() {
     return {
       name: this.name,

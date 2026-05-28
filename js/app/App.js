@@ -20,8 +20,8 @@ export class App {
   }
 
   _registerTools() {
-    this.toolManager.registerTool(new WeatherTool());
-    this.toolManager.registerTool(new SmartThingsTool());
+    this.toolManager.registerTool(WeatherTool);
+    this.toolManager.registerTool(SmartThingsTool);
   }
 
   _setupEventListeners() {
@@ -59,17 +59,11 @@ export class App {
       this._saveSettings();
     });
 
-    document.getElementById('back-from-settings-btn').addEventListener('click', () => {
-      this.ui.showScreen('main');
-    });
-
-    document.getElementById('back-from-tools-btn').addEventListener('click', () => {
-      this.ui.showScreen('main');
-    });
-
-    document.getElementById('back-from-tool-settings-btn').addEventListener('click', () => {
-      this.ui.showScreen('tools-library-screen');
-      this._populateToolsLibrary();
+    Array.from(document.querySelectorAll('.back-btn')).forEach(btn => {
+      btn.addEventListener('click', () => {
+        this.ui.showScreen(btn.dataset.returnScreen || 'main');
+        this._populateToolsLibrary();
+      });
     });
 
     document.addEventListener('click', (e) => {
@@ -80,26 +74,20 @@ export class App {
           e.target !== profileMenu && !profileMenu.contains(e.target)) {
         this.ui.closeProfileMenu();
       }
-
-      if (e.target.classList.contains('tool-name')) {
-        this._showToolPopup(e.target.dataset.toolName);
-      }
     });
 
     document.getElementById('view-usage-link').addEventListener('click', (e) => {
       e.preventDefault();
-      window.open('https://aistudio.google.com/app/apikey', '_blank');
+      window.open('https://aistudio.google.com/app/rate-limit', '_blank');
     });
   }
 
   _populateSettings() {
     const apiKeyInput = document.getElementById('api-key-input');
     const voiceSelect = document.getElementById('voice-select');
-    const thinkingSelect = document.getElementById('thinking-select');
 
     apiKeyInput.value = this.storage.getAPIKey();
     voiceSelect.value = this.storage.getVoice();
-    thinkingSelect.value = this.storage.getThinkingLevel();
 
     const toolSettingsContainer = document.getElementById('tool-settings-container');
     toolSettingsContainer.innerHTML = '';
@@ -119,7 +107,7 @@ export class App {
       toolItem.className = 'tool-settings-item';
       toolItem.textContent = tool.name;
       toolItem.addEventListener('click', () => {
-        this._showToolSettings(tool.name);
+        this._showToolSettings(tool.name, 'settings-screen');
       });
       toolSettingsContainer.appendChild(toolItem);
     });
@@ -128,20 +116,19 @@ export class App {
   _saveSettings() {
     const apiKeyInput = document.getElementById('api-key-input');
     const voiceSelect = document.getElementById('voice-select');
-    const thinkingSelect = document.getElementById('thinking-select');
 
     this.storage.setAPIKey(apiKeyInput.value);
     this.storage.setVoice(voiceSelect.value);
-    this.storage.setThinkingLevel(thinkingSelect.value);
 
     alert('Settings saved!');
   }
 
-  _showToolSettings(toolName) {
+  _showToolSettings(toolName, returnScreen='main') {
     const tool = this.toolManager.getTool(toolName);
     const fields = tool.getConfigFields();
     const config = this.storage.getToolConfig(toolName);
 
+    document.getElementById('back-from-tool-settings-btn').dataset.returnScreen = returnScreen;
     this.ui.showScreen('tool-settings-screen');
 
     const toolSettingsTitle = document.getElementById('tool-settings-title');
@@ -151,6 +138,15 @@ export class App {
     fieldsContainer.innerHTML = '';
 
     fields.forEach(field => {
+      if (field.type === 'span') {
+        const span = document.createElement('span');
+        span.textContent = field.text;
+        fieldsContainer.appendChild(span);
+        if (typeof field.style === 'string') {
+          span.style.cssText = field.style;
+        }
+        return;
+      }
       const group = document.createElement('div');
       group.className = 'form-group';
 
@@ -178,7 +174,7 @@ export class App {
 
       if (this.toolManager.setToolConfig(toolName, newConfig)) {
         alert(`${toolName} settings saved!`);
-        this.ui.showScreen('settings-screen');
+        this.ui.showScreen(returnScreen);
         this._populateSettings();
       } else {
         alert('Invalid configuration');
@@ -199,6 +195,7 @@ export class App {
       toolName.className = 'tool-name';
       toolName.textContent = tool.name;
       toolName.dataset.toolName = tool.name;
+      toolName.addEventListener('click', () => this._showToolPopup(tool.name));
 
       const toggle = document.createElement('input');
       toggle.type = 'checkbox';
@@ -233,7 +230,7 @@ export class App {
       settingsLink.onclick = (e) => {
         e.preventDefault();
         popup.style.display = 'none';
-        this._showToolSettings(toolName);
+        this._showToolSettings(toolName, 'tools-library-screen');
       };
     } else {
       settingsLink.style.display = 'none';
@@ -264,9 +261,8 @@ export class App {
         ui: this.ui
       });
       const voice = this.storage.getVoice();
-      const thinkingLevel = this.storage.getThinkingLevel();
 
-      await this.gemini.connect(voice, thinkingLevel, onClose => {
+      await this.gemini.connect(voice, onClose => {
         if (!this.isCallActive) return;
         this.ui.addTranscriptMessage('system', 'Call ended by Gemini');
         this.endCall();

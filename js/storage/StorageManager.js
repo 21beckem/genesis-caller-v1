@@ -19,14 +19,6 @@ export class StorageManager {
     return localStorage.getItem(this.PREFIX + 'voice') || 'Puck';
   }
 
-  setThinkingLevel(level) {
-    localStorage.setItem(this.PREFIX + 'thinking_level', level);
-  }
-
-  getThinkingLevel() {
-    return localStorage.getItem(this.PREFIX + 'thinking_level') || 'disabled';
-  }
-
   setToolEnabled(toolName, enabled) {
     localStorage.setItem(this.PREFIX + 'tool_' + toolName + '_enabled', enabled ? '1' : '0');
   }

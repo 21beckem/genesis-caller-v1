@@ -4,11 +4,13 @@ export class ToolManager {
     this.tools = new Map();
   }
 
-  registerTool(tool) {
+  registerTool(toolClass) {
+    const tool = new toolClass();
     this.tools.set(tool.name, tool);
     if (!this.storage.getToolConfig(tool.name)) {
       this.storage.setToolConfig(tool.name, tool.getConfig());
     }
+    tool.configUpdated(this.storage.getToolConfig(tool.name));
   }
 
   getTool(name) {
@@ -53,7 +55,15 @@ export class ToolManager {
     const config = this.getToolConfig(toolName);
     tool.config = config;
 
-    return await tool.execute(functionName, args);
+    const toolFunction = tool.getToolDefinition().functions?.find(fn => fn.name === functionName);
+    if (!toolFunction) {
+      throw new Error(`Function ${functionName} not found in tool ${toolName}`);
+    }
+    if (typeof toolFunction.execute !== 'function') {
+      throw new Error(`Function ${functionName} is not executable`);
+    }
+
+    return await toolFunction.execute(args);
   }
 
   getGeminiToolDefinitions() {

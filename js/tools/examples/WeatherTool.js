@@ -52,17 +52,11 @@ export class WeatherTool extends BaseTool {
               }
             },
             required: ['city']
-          }
+          },
+          execute: ({ city, units }) => this._getWeather(city, units || 'metric')
         }
       ]
     };
-  }
-
-  async execute(functionName, args) {
-    if (functionName === 'getWeather') {
-      return this._getWeather(args.city, args.units || 'metric');
-    }
-    throw new Error(`Unknown function ${functionName}`);
   }
 
   async _getWeather(city, units) {

@@ -7,6 +7,18 @@ import {
   Type,
 } from './genai-2.6.0.js';
 
+
+const INITIAL_CONTEXT = `
+Things to know but never say:
+- Never use slang. Respond using the same language I talk to you in.
+- If the prompt I give is not clear, or it seems like I wasn't speaking to you, say nothing.
+- Speak slowly and clearly, and wait for me to finish speaking before responding. If I interrupt you, stop talking immediately and wait for me to finish.
+
+Things to know about yourself:
+- Your name is Genesis.
+- You are an AI assistant created and trained by Mr. Becker.
+- You are an expandable AI that can utilize extentions to perform tasks.`;
+
 export class GeminiClient {
 	#geminiSpeakingNow = false;
   constructor(apiKey, toolManager, audio, ui) {
@@ -22,7 +34,7 @@ export class GeminiClient {
     this.functionToToolName = new Map();
   }
 
-  async connect(voice, thinkingLevel, onCloseCallback) {
+  async connect(voice, onCloseCallback) {
     if (this.isConnected) return this.session;
     this.ai = new GoogleGenAI({ apiKey: this.apiKey });
     this._buildFunctionMap();
@@ -43,17 +55,11 @@ export class GeminiClient {
       },
       systemInstruction: {
         parts: [{
-          text: 'You are a helpful AI assistant with access to tools. Be concise, and use tools when they help the user.',
+          text: INITIAL_CONTEXT.trim(),
         }],
       },
       tools: this._buildTools(),
     };
-
-    if (thinkingLevel !== 'disabled') {
-      config.thinkingConfig = {
-        thinkingBudgetTokens: thinkingLevel === 'high' ? 10000 : 5000,
-      };
-    }
 
     this.session = await this.ai.live.connect({
       model: 'models/gemini-3.1-flash-live-preview',
@@ -159,8 +165,7 @@ export class GeminiClient {
         this.isConnected = true;
     }
     if (message.toolCall) {
-      this._enqueueResponse({ toolCall: message.toolCall });
-      return;
+      this.processToolCall(message.toolCall);
     }
 
     if (message.serverContent) {
@@ -181,7 +186,6 @@ export class GeminiClient {
 				});
 			}
 			if (message?.serverContent?.outputTranscription?.text) {
-				this.#geminiSpeakingNow = true;
 				if (this.#middleOfMessageId !== null) {
 					this.ui.appendToTranscriptMessageById(this.#middleOfMessageId, message.serverContent.outputTranscription.text);
 				} else {
@@ -189,39 +193,6 @@ export class GeminiClient {
 				}
 			}
     }
-  }
-
-  _normalizeServerContent(serverContent) {
-    const modelTurn = serverContent.modelTurn || {};
-    const parts = modelTurn.parts || [];
-
-    if (!parts.length) {
-      return {
-        serverContent,
-        turnComplete: Boolean(serverContent.turnComplete),
-      };
-    }
-
-    return {
-      parts: parts.map((part) => {
-        if (part.text) {
-          return { text: part.text };
-        }
-
-        if (part.inlineData) {
-          return {
-            inline_data: {
-              mime_type: part.inlineData.mimeType,
-              data: part.inlineData.data,
-            },
-          };
-        }
-
-        return part;
-      }),
-      serverContent,
-      turnComplete: Boolean(serverContent.turnComplete),
-    };
   }
 
   _enqueueResponse(response) {
